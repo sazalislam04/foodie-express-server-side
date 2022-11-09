@@ -96,12 +96,14 @@ app.get("/reviews", async (req, res) => {
       query = {
         id: req.query.id,
       };
+    } else {
+      query = {
+        email: req.query.email,
+      };
     }
     const cursor = reviewsCollection.find(query);
     const result = await cursor.toArray();
     res.send(result);
-
-    console.log(result);
   } catch (error) {
     console.log(error.message);
   }
@@ -132,6 +134,28 @@ app.get("/home-services", async (req, res) => {
     const cursor = foodsCollection.find({}).sort({ _id: -1 }).limit(3);
     const result = await cursor.toArray();
     res.send(result);
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
+// delete
+app.delete("/reviews/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = { _id: ObjectId(id) };
+    const result = await reviewsCollection.deleteOne(query);
+    if (result.deletedCount) {
+      res.send({
+        success: true,
+        message: "Review Deleted Successfully",
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "Review Already Deleted",
+      });
+    }
   } catch (error) {
     console.log(error.message);
   }

@@ -21,9 +21,20 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
-// function verifyJWT(req, res, next){
-
-// }
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
 
 async function run() {
   try {
@@ -81,7 +92,7 @@ app.post("/services", async (req, res) => {
 });
 
 // jwt token
-app.post("/jwt", async (req, res) => {
+app.post("/jwt", (req, res) => {
   const user = req.body;
   const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
     expiresIn: "30d",
@@ -154,6 +165,37 @@ app.delete("/reviews/:id", async (req, res) => {
       res.send({
         success: false,
         error: "Review Already Deleted",
+      });
+    }
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
+// updated
+app.patch("/reviews/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = req.body;
+    const query = { _id: ObjectId(id) };
+    const updatedDoc = {
+      $set: {
+        name: user.name,
+        email: user.email,
+        review: user.review,
+      },
+    };
+    const result = await reviewsCollection.updateOne(query, updatedDoc);
+
+    if (result.matchedCount) {
+      res.send({
+        success: true,
+        message: "Review Updated successfully",
+      });
+    } else {
+      res.send({
+        success: false,
+        error: error.message,
       });
     }
   } catch (error) {

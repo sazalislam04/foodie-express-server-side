@@ -32,7 +32,7 @@ function verifyJWT(req, res, next) {
       return res.status(401).send({ message: "unauthorized access" });
     }
     req.decoded = decoded;
-    next();
+    return next();
   });
 }
 

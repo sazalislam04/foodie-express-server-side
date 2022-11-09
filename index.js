@@ -1,11 +1,12 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
+const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 require("dotenv").config();
 app.use(cors());
-app.use(express());
+app.use(express.json());
 
 app.get("/", (req, res) => {
   res.send("Foodie Express server running");
@@ -20,6 +21,10 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+// function verifyJWT(req, res, next){
+
+// }
+
 async function run() {
   try {
     await client.connect();
@@ -32,10 +37,99 @@ run();
 
 const foodsCollection = client.db("foodie").collection("services");
 
-app.get("/foods", async (req, res) => {
+const reviewsCollection = client.db("foodie").collection("reviews");
+
+app.get("/services", async (req, res) => {
   try {
     const query = {};
     const cursor = foodsCollection.find(query);
+    const result = await cursor.toArray();
+    res.send(result);
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
+app.get("/services/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = { _id: ObjectId(id) };
+    const result = await foodsCollection.findOne(query);
+    res.send(result);
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
+// get service
+app.get("/services", async (req, res) => {
+  const query = {};
+  const cursor = foodsCollection.find(query);
+  const result = await cursor.toArray();
+  res.send(result);
+});
+
+// add service
+app.post("/services", async (req, res) => {
+  try {
+    const addService = req.body;
+    const result = await foodsCollection.insertOne(addService);
+    res.send(result);
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
+// jwt token
+app.post("/jwt", async (req, res) => {
+  const user = req.body;
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
+    expiresIn: "30d",
+  });
+  res.send({ token });
+});
+
+app.get("/reviews", async (req, res) => {
+  try {
+    let query = {};
+    if (req.query.id) {
+      query = {
+        id: req.query.id,
+      };
+    }
+    const cursor = reviewsCollection.find(query);
+    const result = await cursor.toArray();
+    res.send(result);
+
+    console.log(result);
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
+app.post("/reviews", async (req, res) => {
+  try {
+    const review = req.body;
+    const result = await reviewsCollection.insertOne(review);
+    if (result.insertedId) {
+      res.send({
+        success: true,
+        message: "Thanks For Review",
+      });
+    } else {
+      res.send({
+        success: false,
+        error: error.message,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+app.get("/home-services", async (req, res) => {
+  try {
+    const cursor = foodsCollection.find({}).sort({ _id: -1 }).limit(3);
     const result = await cursor.toArray();
     res.send(result);
   } catch (error) {

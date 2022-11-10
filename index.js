@@ -96,7 +96,7 @@ app.post("/jwt", (req, res) => {
   const user = req.body;
   const id = req.params;
   const token = jwt.sign(user, id, process.env.ACCESS_TOKEN, {
-    expiresIn: "30d",
+    expiresIn: "1h",
   });
   res.send({ token });
 });
@@ -104,21 +104,21 @@ app.post("/jwt", (req, res) => {
 app.get("/reviews", verifyJWT, async (req, res) => {
   try {
     const decoded = req.decoded;
-    if (decoded?.email !== req.query.id) {
+    if (decoded.email !== req.query.email) {
       res.status(403).send({ message: "Forbidden access" });
     }
     let query = {};
-    if (req.query.id) {
-      query = {
-        id: req.query.id,
-      };
-    } else {
+    if (req.query.email) {
       query = {
         email: req.query.email,
       };
+    } else {
+      query = {
+        id: req.query.id,
+      };
     }
     const cursor = reviewsCollection.find(query);
-    const result = await cursor.toArray();
+    const result = await cursor.sort({ timestamp: -1 }).toArray();
     res.send(result);
   } catch (error) {
     console.log(error.message);
@@ -128,7 +128,9 @@ app.get("/reviews", verifyJWT, async (req, res) => {
 app.post("/reviews", async (req, res) => {
   try {
     const review = req.body;
-    const result = await reviewsCollection.insertOne(review);
+    const result = await reviewsCollection.insertOne(review, {
+      timestamp: new Date(),
+    });
     if (result.insertedId) {
       res.send({
         success: true,

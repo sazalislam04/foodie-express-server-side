@@ -190,6 +190,7 @@ app.patch("/reviews/:id", async (req, res) => {
         name: user.name,
         email: user.email,
         review: user.review,
+        timestamp: new Date(),
       },
     };
     const result = await reviewsCollection.updateOne(query, updatedDoc);

@@ -123,11 +123,8 @@ app.get("/reviews", verifyJWT, async (req, res) => {
 
 app.get("/currentReview", async (req, res) => {
   const query = req.query.id;
-
   const cursor = reviewsCollection.find({ id: query });
-
   const result = await cursor.sort({ timestamp: -1 }).toArray();
-
   res.send(result);
 });
 

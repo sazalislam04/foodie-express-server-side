@@ -32,7 +32,7 @@ function verifyJWT(req, res, next) {
       return res.status(401).send({ message: "unauthorized access" });
     }
     req.decoded = decoded;
-    return next();
+    next();
   });
 }
 
@@ -94,14 +94,19 @@ app.post("/services", async (req, res) => {
 // jwt token
 app.post("/jwt", (req, res) => {
   const user = req.body;
-  const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
+  const id = req.params;
+  const token = jwt.sign(user, id, process.env.ACCESS_TOKEN, {
     expiresIn: "30d",
   });
   res.send({ token });
 });
 
-app.get("/reviews", async (req, res) => {
+app.get("/reviews", verifyJWT, async (req, res) => {
   try {
+    const decoded = req.decoded;
+    if (decoded?.email !== req.query.id) {
+      res.status(403).send({ message: "Forbidden access" });
+    }
     let query = {};
     if (req.query.id) {
       query = {

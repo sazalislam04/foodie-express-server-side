@@ -94,8 +94,7 @@ app.post("/services", async (req, res) => {
 // jwt token
 app.post("/jwt", (req, res) => {
   const user = req.body;
-  const id = req.params;
-  const token = jwt.sign(user, id, process.env.ACCESS_TOKEN, {
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
     expiresIn: "1h",
   });
   res.send({ token });
@@ -112,17 +111,24 @@ app.get("/reviews", verifyJWT, async (req, res) => {
       query = {
         email: req.query.email,
       };
-    } else {
-      query = {
-        id: req.query.id,
-      };
     }
     const cursor = reviewsCollection.find(query);
     const result = await cursor.sort({ timestamp: -1 }).toArray();
+    console.log(result);
     res.send(result);
   } catch (error) {
     console.log(error.message);
   }
+});
+
+app.get("/currentReview", async (req, res) => {
+  const query = req.query.id;
+
+  const cursor = reviewsCollection.find({ id: query });
+
+  const result = await cursor.sort({ timestamp: -1 }).toArray();
+
+  res.send(result);
 });
 
 app.post("/reviews", async (req, res) => {
